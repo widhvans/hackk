@@ -1,2 +1,2 @@
 # config.py
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # Replace with your Telegram Bot Token from BotFather
+BOT_TOKEN = "7953655254:AAGUxu-olhwtUhdjEigPFnQS8T3zoLNhnXs"  # Replace with your Telegram Bot Token from BotFather
