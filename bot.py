@@ -14,6 +14,9 @@ from config import BOT_TOKEN, DOWNLOAD_DIR
 from utils import save_file, patch_apk, cleanup, download_from_url
 import logging
 
+# Create logs directory before configuring logging
+os.makedirs('logs', exist_ok=True)
+
 # Set up logging
 logging.basicConfig(filename='logs/bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -32,7 +35,6 @@ async def handle_apk(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message.text and re.match(r'https?://', message.text):
         await message.reply_text(f"Received URL: {message.text}. Downloading...")
         file_path = f"{DOWNLOAD_DIR}/downloaded_apk_{int(time.time())}.apk"
-        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         
         try:
             saved_path = await download_from_url(message.text, file_path)
@@ -53,7 +55,6 @@ async def handle_apk(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Download the file
     file_path = f"{DOWNLOAD_DIR}/{file.file_name}"
-    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     
     try:
         file_obj = await file.get_file()
@@ -110,7 +111,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle errors globally."""
     logger.error(f"Update {update} caused error: {context.error}")
     if update and update.message:
-        await update.message.reply_text("An unexpected error occurred. Please try again or contact support.")
+        await message.reply_text("An unexpected error occurred. Please try again or contact support.")
 
 def main():
     """Run the bot."""
