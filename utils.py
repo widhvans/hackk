@@ -6,6 +6,9 @@ from datetime import datetime
 import logging
 import aiohttp
 
+# Create logs directory before configuring logging
+os.makedirs('logs', exist_ok=True)
+
 # Set up logging
 logging.basicConfig(filename='logs/patcher.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -13,6 +16,7 @@ logger = logging.getLogger(__name__)
 async def save_file(file_path, file_obj):
     """Save the uploaded file to the specified path."""
     try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure downloads directory exists
         await file_obj.download_to_drive(file_path)
         logger.info(f"Saved file: {file_path}")
         return file_path
@@ -23,6 +27,7 @@ async def save_file(file_path, file_obj):
 async def download_from_url(url, file_path):
     """Download a file from an external URL."""
     try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure downloads directory exists
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.status != 200:
