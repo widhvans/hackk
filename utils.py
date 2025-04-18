@@ -4,20 +4,39 @@ import zipfile
 import time
 from datetime import datetime
 import logging
+import aiohttp
 
 # Set up logging
-logging.basicConfig(filename='patcher.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='logs/patcher.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def save_file(file_path, file):
+async def save_file(file_path, file_obj):
     """Save the uploaded file to the specified path."""
     try:
-        with open(file_path, 'wb') as f:
-            file.download(out=f)
+        await file_obj.download_to_drive(file_path)
         logger.info(f"Saved file: {file_path}")
         return file_path
     except Exception as e:
         logger.error(f"Error saving file {file_path}: {str(e)}")
+        raise
+
+async def download_from_url(url, file_path):
+    """Download a file from an external URL."""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    raise Exception(f"Failed to download from URL: {response.status}")
+                with open(file_path, 'wb') as f:
+                    while True:
+                        chunk = await response.content.read(1024 * 1024)  # 1 MB chunks
+                        if not chunk:
+                            break
+                        f.write(chunk)
+        logger.info(f"Downloaded file from URL: {file_path}")
+        return file_path
+    except Exception as e:
+        logger.error(f"Error downloading from URL {url}: {str(e)}")
         raise
 
 def patch_apk(file_path):
@@ -33,23 +52,26 @@ def patch_apk(file_path):
                 for item in original_zip.infolist():
                     patched_zip.writestr(item, original_zip.read(item))
                 
-                # Patch 1: Add a custom metadata file
-                metadata_content = "Patched by NextLevelPatcher v1.0\nPremium Features Unlocked\n"
-                patched_zip.writestr("META-INF/patch_metadata.txt", metadata_content)
-                patch_logs.append("Added custom metadata file: META-INF/patch_metadata.txt")
+                # Patch 1: Add a hacked metadata file
+                metadata_content = "Hacked by NextLevelPatcher v2.0\nAll Restrictions Removed\nSupercharged Features Unlocked!"
+                patched_zip.writestr("META-INF/hack_metadata.txt", metadata_content)
+                patch_logs.append("Added hacked metadata file: META-INF/hack_metadata.txt")
                 
-                # Patch 2: Simulate AndroidManifest.xml modification
+                # Patch 2: Inject custom permission in AndroidManifest.xml
                 manifest_path = "AndroidManifest.xml"
                 if manifest_path in original_zip.namelist():
                     manifest_content = original_zip.read(manifest_path).decode('utf-8')
-                    manifest_content += "<!-- Patched by NextLevelPatcher -->"
+                    manifest_content = manifest_content.replace(
+                        '<manifest', 
+                        '<manifest\n    <uses-permission android:name="com.nextlevel.HACK_ACCESS" />'
+                    )
                     patched_zip.writestr(manifest_path, manifest_content.encode('utf-8'))
-                    patch_logs.append("Modified AndroidManifest.xml with custom comment")
+                    patch_logs.append("Injected custom permission in AndroidManifest.xml")
                 
-                # Patch 3: Add a surprising resource file
-                surprise_content = "Welcome to the Next Level! This APK has been supercharged!"
-                patched_zip.writestr("res/next_level.txt", surprise_content)
-                patch_logs.append("Added surprising resource: res/next_level.txt")
+                # Patch 3: Add a surprising script in assets/
+                script_content = "alert('This APK has been hacked by NextLevelPatcher! Enjoy unlimited power!');"
+                patched_zip.writestr("assets/hack_script.js", script_content)
+                patch_logs.append("Added surprising script: assets/hack_script.js")
         
         # Verify the patched APK
         patched_size = os.path.getsize(patched_path)
@@ -75,10 +97,3 @@ def cleanup(file_path):
             logger.info(f"Cleaned up file: {file_path}")
     except Exception as e:
         logger.error(f"Error cleaning up file {file_path}: {str(e)}")
-
-def validate_file_size(file_size):
-    """Check if the file size is within acceptable limits."""
-    from config import MAX_FILE_SIZE
-    if file_size > MAX_FILE_SIZE:
-        raise ValueError(f"File size ({file_size / (1024 * 1024):.2f} MB) exceeds maximum limit ({MAX_FILE_SIZE / (1024 * 1024):.2f} MB).")
-    return True
